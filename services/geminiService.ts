@@ -2,13 +2,22 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const sendMessageToGemini = async (message: string, history: { role: 'user' | 'model', content: string }[]) => {
-  // Initialize AI client with API key from environment variable
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  
+  if (!apiKey || apiKey === 'undefined') {
+    return { 
+      text: "Erro: Chave API do Gemini não encontrada. Por favor, configure a variável de ambiente GEMINI_API_KEY.", 
+      sources: [] 
+    };
+  }
+
+  // Initialize AI client with API key
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
-    // Using gemini-3-pro-preview for complex technical and political reasoning tasks
+    // Using gemini-3-flash-preview for fast and reliable responses in this environment
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: [
         ...history.map(h => ({ role: h.role, parts: [{ text: h.content }] })),
         { role: 'user', parts: [{ text: message }] }
@@ -32,8 +41,12 @@ export const sendMessageToGemini = async (message: string, history: { role: 'use
       },
     });
 
+    if (!response || !response.candidates || response.candidates.length === 0) {
+      throw new Error("Nenhuma resposta recebida do modelo.");
+    }
+
     // Extract text output from GenerateContentResponse using the .text property
-    const text = response.text || "Desculpe, não consegui processar sua solicitação.";
+    const text = response.text || "Desculpe, não consegui processar sua solicitação no momento.";
     
     // Extract website URLs from groundingChunks for source transparency
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
@@ -44,8 +57,12 @@ export const sendMessageToGemini = async (message: string, history: { role: 'use
       .filter((v, i, a) => a.findIndex(t => t.uri === v.uri) === i) || [];
 
     return { text, sources };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Error:", error);
-    return { text: "Ocorreu um erro ao conectar com o servidor de IA. Verifique se as permissões de rede e chave API estão corretas.", sources: [] };
+    const errorMessage = error?.message || "Erro desconhecido";
+    return { 
+      text: `Ocorreu um erro ao conectar com o servidor de IA: ${errorMessage}. Verifique se as permissões de rede e chave API estão corretas.`, 
+      sources: [] 
+    };
   }
 };

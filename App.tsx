@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import Chat from './components/Chat';
 import Guide from './components/Guide';
@@ -7,12 +7,34 @@ import VoterManual from './components/VoterManual';
 import GlobalChat from './components/GlobalChat';
 import { DATA_CATEGORIES } from './constants';
 import * as LucideIcons from 'lucide-react';
-import { ExternalLink, Database } from 'lucide-react';
+import { ExternalLink, Database, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('manual');
   const [pendingSearch, setPendingSearch] = useState<string | null>(null);
+  const [hasKey, setHasKey] = useState<boolean>(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      // @ts-ignore - platform provided
+      if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+        // @ts-ignore
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasKey(selected);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKey = async () => {
+    // @ts-ignore - platform provided
+    if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+      // @ts-ignore
+      await window.aistudio.openSelectKey();
+      setHasKey(true); // Assume success as per guidelines
+    }
+  };
 
   const getContextLabel = () => {
     switch(activeTab) {
@@ -104,6 +126,20 @@ const App: React.FC = () => {
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8F9FA]">
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 overflow-x-hidden">
+        {!hasKey && (
+          <div className="bg-amber-50 border-b border-amber-200 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 text-amber-800 text-sm font-medium">
+              <Key size={18} />
+              <span>Para usar os recursos avançados de IA, você precisa selecionar uma chave API.</span>
+            </div>
+            <button 
+              onClick={handleOpenKey}
+              className="px-4 py-2 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Selecionar Chave
+            </button>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
