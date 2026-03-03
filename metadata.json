@@ -1,0 +1,7 @@
+{
+  "name": "Remix: Eleições 2026 - Transparência Brasil",
+  "description": "Plataforma avançada de análise política e transparência de dados focada nas eleições brasileiras de 2026, com inteligência artificial integrada para consulta de gastos públicos e cenários eleitorais.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
